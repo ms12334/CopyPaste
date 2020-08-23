@@ -1,0 +1,31 @@
+Private Sub CopyPaste1_Click()
+    Dim inFile As String, outFile As String
+    Dim wbIn As Workbook, wbOut As Workbook
+    Dim wsCur As Worksheet
+    Dim i As Long
+    Dim tabNameIn As String, tabNameOut As String, cellLocIn As String, cellLocOut As String
+    
+    Set wsCur = Application.ActiveSheet
+    
+    inFile = Application.GetOpenFilename("Excel Files, *.xls*", 2, "Select Copy From File")
+    Set wbIn = Workbooks.Open(Filename:=inFile, ReadOnly:=True)
+    outFile = Application.GetOpenFilename("Excel Files, *.xls*", 2, "Select Paste To File")
+    Set wbOut = Workbooks.Open(outFile)
+
+    i = 2
+    Do While wsCur.Cells(i, 1) <> "" Or wsCur.Cells(i, 2) <> "" Or wsCur.Cells(i, 3) <> "" Or wsCur.Cells(i, 4) <> ""
+        tabNameIn = wsCur.Cells(i, 1).Value
+        cellLocIn = wsCur.Cells(i, 2).Value
+        tabNameOut = wsCur.Cells(i, 3).Value
+        cellLocOut = wsCur.Cells(i, 4).Value
+        'simple copy/paste
+        wbIn.Sheets(tabNameIn).Range(cellLocIn).Copy wbOut.Sheets(tabNameOut).Range(cellLocOut)
+        'copy only values
+        wbOut.Sheets(tabNameOut).Range(cellLocOut).Value = wbIn.Sheets(tabNameIn).Range(cellLocIn).Value
+        i = i + 1
+    Loop
+    
+    wbIn.Close
+    wbOut.Close SaveChanges:=True
+    MsgBox "Done!"
+End Sub
