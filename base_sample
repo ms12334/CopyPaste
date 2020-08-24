@@ -1,4 +1,5 @@
-Private Sub CopyPaste1_Click()
+Option Explicit
+Sub CopyPaste1_Click()
     Dim inFile As String, outFile As String
     Dim wbIn As Workbook, wbOut As Workbook
     Dim wsCur As Worksheet
