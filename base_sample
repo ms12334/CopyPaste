@@ -22,10 +22,14 @@ Private Sub CopyPaste1_Click()
         wbIn.Sheets(tabNameIn).Range(cellLocIn).Copy wbOut.Sheets(tabNameOut).Range(cellLocOut)
         'copy only values
         wbOut.Sheets(tabNameOut).Range(cellLocOut).Value = wbIn.Sheets(tabNameIn).Range(cellLocIn).Value
+        wsCur.Cells(i,5).Value = "Copied"
         i = i + 1
     Loop
     
     wbIn.Close
     wbOut.Close SaveChanges:=True
+    Set wbIn = Nothing
+    Set wbOut = Nothing
+    Set wsCur = Nothing
     MsgBox "Done!"
 End Sub
