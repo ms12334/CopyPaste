@@ -7,4 +7,5 @@ Column B: source cell\
 Column C: target sheet name\
 Column D: target cell
 
-This is to display a basic idea. Things like error handling are not included.
+This is to display a basic idea. 
+Probably most common errors are added in the code.
