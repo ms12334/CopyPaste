@@ -1,36 +1,80 @@
 Option Explicit
-Sub CopyPaste1_Click()
+Private Sub CopyPaste1_Click()
     Dim inFile As String, outFile As String
-    Dim wbIn As Workbook, wbOut As Workbook
-    Dim wsCur As Worksheet
-    Dim i As Long
+    Dim row_num As Long, error_count As Long
     Dim tabNameIn As String, tabNameOut As String, cellLocIn As String, cellLocOut As String
+    Dim wbIn As Workbook, wbOut As Workbook
+    Dim wsMain As Worksheet, wsErr As Worksheet
+
+    Application.ScreenUpdating = False
+    Set wsMain = Application.ActiveSheet
     
-    Set wsCur = Application.ActiveSheet
+    'Call subrotine to delete Worksheet with "Error Report" name if it exists
+    deleteWs ThisWorkbook, "Error Report"
+    'Add a sheet named "Error Report"
+    Sheets.Add After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count)
+    Sheets(ThisWorkbook.Sheets.Count).name = "Error Report"
+    Set wsErr = Sheets("Error Report")
+    error_count = 0
     
     inFile = Application.GetOpenFilename("Excel Files, *.xls*", 2, "Select Copy From File")
+    'If user cancelled
+    If inFile = "False" Then
+        Exit Sub
+    End If
     Set wbIn = Workbooks.Open(Filename:=inFile, ReadOnly:=True)
+    
     outFile = Application.GetOpenFilename("Excel Files, *.xls*", 2, "Select Paste To File")
+    'If user cancelled
+    If outFile = "False" Then
+        Exit Sub
+    End If
     Set wbOut = Workbooks.Open(outFile)
 
-    i = 2
-    Do While wsCur.Cells(i, 1) <> "" Or wsCur.Cells(i, 2) <> "" Or wsCur.Cells(i, 3) <> "" Or wsCur.Cells(i, 4) <> ""
-        tabNameIn = wsCur.Cells(i, 1).Value
-        cellLocIn = wsCur.Cells(i, 2).Value
-        tabNameOut = wsCur.Cells(i, 3).Value
-        cellLocOut = wsCur.Cells(i, 4).Value
+    row_num = 2
+    Do While wsMain.Cells(row_num, 1) <> "" And wsMain.Cells(row_num, 2) <> "" _
+             And wsMain.Cells(row_num, 3) <> "" And wsMain.Cells(row_num, 4) <> ""
+        tabNameIn = wsMain.Cells(row_num, 1).Value
+        cellLocIn = wsMain.Cells(row_num, 2).Value
+        tabNameOut = wsMain.Cells(row_num, 3).Value
+        cellLocOut = wsMain.Cells(row_num, 4).Value
         'simple copy/paste
         wbIn.Sheets(tabNameIn).Range(cellLocIn).Copy wbOut.Sheets(tabNameOut).Range(cellLocOut)
         'copy only values
-        wbOut.Sheets(tabNameOut).Range(cellLocOut).Value = wbIn.Sheets(tabNameIn).Range(cellLocIn).Value
-        wsCur.Cells(i,5).Value = "Copied"
-        i = i + 1
+        'wbOut.Sheets(tabNameOut).Range(cellLocOut).Value = wbIn.Sheets(tabNameIn).Range(cellLocIn).Value
+        On Error GoTo ErrorHandler:
+        row_num = row_num + 1
+ErrorHandler:
+    printMsgs wsErr, Err.Number, row_num, error_count
+Resume Next
     Loop
+    wsErr.Columns("A;A").EntireColumn.AutoFit
     
-    wbIn.Close
     wbOut.Close SaveChanges:=True
+    wbIn.Close
     Set wbIn = Nothing
     Set wbOut = Nothing
-    Set wsCur = Nothing
+    Set wsMain = Nothing
+    Set wsErr = Nothing
     MsgBox "Done!"
+End Sub
+Sub deleteWs(wb As Workbook, name As String)
+    Dim ws As Worksheet
+    For Each ws In wb.Worksheets
+        If ws.name = name Then
+            ws.Delete
+        End If
+    Next
+End Sub
+Sub printMsgs(ws As Worksheet, error_code As Integer, row As Long, err_count As Long)
+    Select Case error_code
+        Case 9
+            err_count = err_count + 1
+            ws.Cells(err_count, 1).Value = "Excel VBA Error Code 9 (Row Number " _
+            & row & "): Sheet Name is incorrect or does not exist."
+        Case 1004
+            err_count = err_count + 1
+            ws.Cells(err_count, 1).Value = "Excel VBA Error Code 1004 (Row Number " _
+            & row & "): Range Name is incorrect or does not exist."
+    End Select
 End Sub
