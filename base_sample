@@ -9,11 +9,8 @@ Private Sub CopyPaste1_Click()
     Application.ScreenUpdating = False
     Set wsMain = Application.ActiveSheet
     
-    'Call subrotine to delete Worksheet with "Error Report" name if it exists
-    deleteWs ThisWorkbook, "Error Report"
-    'Add a sheet named "Error Report"
-    Sheets.Add After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count)
-    Sheets(ThisWorkbook.Sheets.Count).name = "Error Report"
+    'Call subroutine to clear Worksheet contents with "Error Report" name if it exists. A worksheet is added if it doesn't exist.
+    addWs ThisWorkbook, "Error Report"
     Set wsErr = Sheets("Error Report")
     error_count = 0
     
@@ -48,8 +45,10 @@ ErrorHandler:
     printMsgs wsErr, Err.Number, row_num, error_count
 Resume Next
     Loop
+    If error_count = 0 Then
+        wsErr.Cells(1, 1).Value = "No errors found."
+    End If
     wsErr.Columns("A;A").EntireColumn.AutoFit
-    
     wbOut.Close SaveChanges:=True
     wbIn.Close
     Set wbIn = Nothing
@@ -58,13 +57,21 @@ Resume Next
     Set wsErr = Nothing
     MsgBox "Done!"
 End Sub
-Sub deleteWs(wb As Workbook, name As String)
+Sub addWs(wb As Workbook, name As String)
+'Clear worksheet contents if worksheet "name" exists. If it doesn't exist, add it at the end.
     Dim ws As Worksheet
+    Dim exist As Boolean
+    exist = False
     For Each ws In wb.Worksheets
         If ws.name = name Then
-            ws.Delete
+            ws.Cells.Clear
+            exist = True
         End If
     Next
+    If exist = False Then
+        Sheets.Add After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count)
+        Sheets(ThisWorkbook.Sheets.Count).name = name
+    End If
 End Sub
 Sub printMsgs(ws As Worksheet, error_code As Integer, row As Long, err_count As Long)
     Select Case error_code
