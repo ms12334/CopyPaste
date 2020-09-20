@@ -1,17 +1,16 @@
 Option Explicit
+Dim wbMain As Workbook
+Dim error_count As Long
 Private Sub CopyPaste1_Click()
     Dim inFile As String, outFile As String
-    Dim row_num As Long, error_count As Long
-    Dim tabNameIn As String, tabNameOut As String, cellLocIn As String, cellLocOut As String
+    Dim row_num As Long
+    Dim tabNameIn As String, tabNameOut As String, rangeIn As String, rangeOut As String
     Dim wbIn As Workbook, wbOut As Workbook
     Dim wsMain As Worksheet, wsErr As Worksheet
 
     Application.ScreenUpdating = False
+    Set wbMain = ThisWorkbook
     Set wsMain = Application.ActiveSheet
-    
-    'Call subroutine to clear Worksheet contents with "Error Report" name if it exists. A worksheet is added if it doesn't exist.
-    addWs ThisWorkbook, "Error Report"
-    Set wsErr = Sheets("Error Report")
     error_count = 0
     
     inFile = Application.GetOpenFilename("Excel Files, *.xls*", 2, "Select Copy From File")
@@ -28,36 +27,41 @@ Private Sub CopyPaste1_Click()
     End If
     Set wbOut = Workbooks.Open(outFile)
 
-    row_num = 2
+    'Call subroutine to clear Worksheet contents with "Error Report" name if it exists. A worksheet is added if it doesn't exist.
+    Set wsErr = newWs(wbMain, "Error Report")
+    
+    row_num = 11
     Do While wsMain.Cells(row_num, 1) <> "" And wsMain.Cells(row_num, 2) <> "" _
              And wsMain.Cells(row_num, 3) <> "" And wsMain.Cells(row_num, 4) <> ""
         tabNameIn = wsMain.Cells(row_num, 1).Value
-        cellLocIn = wsMain.Cells(row_num, 2).Value
+        rangeIn = wsMain.Cells(row_num, 2).Value
         tabNameOut = wsMain.Cells(row_num, 3).Value
-        cellLocOut = wsMain.Cells(row_num, 4).Value
-        'simple copy/paste
-        wbIn.Sheets(tabNameIn).Range(cellLocIn).Copy wbOut.Sheets(tabNameOut).Range(cellLocOut)
-        'copy only values
-        'wbOut.Sheets(tabNameOut).Range(cellLocOut).Value = wbIn.Sheets(tabNameIn).Range(cellLocIn).Value
+        rangeOut = wsMain.Cells(row_num, 4).Value
         On Error GoTo ErrorHandler:
+        'simple copy/paste
+        wbIn.Sheets(tabNameIn).Range(rangeIn).Copy wbOut.Sheets(tabNameOut).Range(rangeOut)
+        'copy only values
+        'wbOut.Sheets(tabNameOut).Range(rangeOut).Value = wbIn.Sheets(tabNameIn).Range(rangeIn).Value
         row_num = row_num + 1
 ErrorHandler:
-    printMsgs wsErr, Err.Number, row_num, error_count
+    printMsgs Err.Number, row_num, error_count
 Resume Next
     Loop
     If error_count = 0 Then
         wsErr.Cells(1, 1).Value = "No errors found."
     End If
     wsErr.Columns("A;A").EntireColumn.AutoFit
+    wsMain.Activate
     wbOut.Close SaveChanges:=True
     wbIn.Close
     Set wbIn = Nothing
     Set wbOut = Nothing
+    Set wbMain = Nothing
     Set wsMain = Nothing
     Set wsErr = Nothing
     MsgBox "Done!"
 End Sub
-Sub addWs(wb As Workbook, name As String)
+Function newWs(wb As Workbook, name As String)
 'Clear worksheet contents if worksheet "name" exists. If it doesn't exist, add it at the end.
     Dim ws As Worksheet
     Dim exist As Boolean
@@ -66,22 +70,23 @@ Sub addWs(wb As Workbook, name As String)
         If ws.name = name Then
             ws.Cells.Clear
             exist = True
+            Set newWs = ws
         End If
     Next
     If exist = False Then
-        Sheets.Add After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count)
-        Sheets(ThisWorkbook.Sheets.Count).name = name
+        Set newWs = wb.Sheets.Add(After:=wb.Sheets(wb.Sheets.count))
     End If
-End Sub
-Sub printMsgs(ws As Worksheet, error_code As Integer, row As Long, err_count As Long)
+    newWs.name = name
+End Function
+Sub printMsgs(error_code As Integer, row As Long, err_count As Long)
     Select Case error_code
         Case 9
-            err_count = err_count + 1
-            ws.Cells(err_count, 1).Value = "Excel VBA Error Code 9 (Row Number " _
+            error_count = err_count + 1
+            wbMain.Sheets("Error Report").Cells(err_count, 1).Value = "Excel VBA Error Code 9 (Row Number " _
             & row & "): Sheet Name is incorrect or does not exist."
         Case 1004
-            err_count = err_count + 1
-            ws.Cells(err_count, 1).Value = "Excel VBA Error Code 1004 (Row Number " _
+            error_count = err_count + 1
+            wbMain.Sheets("Error Report").Cells(err_count, 1).Value = "Excel VBA Error Code 1004 (Row Number " _
             & row & "): Range Name is incorrect or does not exist."
     End Select
 End Sub
